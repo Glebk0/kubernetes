@@ -1,0 +1,88 @@
+- hosts: kuber-master:kuber-node
+  become: yes
+  tasks:
+   - name: Disable swap
+     command: swapoff -a
+
+   - name: installing software
+     yum:
+       name: "{{ item }}"
+       state: present
+     with_items:
+       - yum-utils
+       - jq
+       - net-tools
+       - vim
+
+   - name: adding repo
+     yum_repository:
+       name: docker-ce-edge
+       baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+       description: docker-ce-edge
+
+   - name: installing docker
+     yum:
+       enablerepo: docker-ce-edge
+       name: docker-ce
+       state: present
+
+   - name: ensuring docker directory exists
+     file:
+       path: /etc/docker/
+       state: directory
+
+   - name: adding docker-daemon.json
+     template:
+       src: docker_daemon.json.j2
+       dest: /etc/docker/daemon.json
+
+   - name: adding docker.conf file
+     template:
+       src: docker.conf.j2
+       dest: /etc/sysctl.d/docker.conf
+
+   - name: adding vagrant user to docker group
+     user:
+       append: yes
+       user: vagrant
+       groups: docker
+
+   - name: reloading docker service
+     systemd:
+       name: docker
+       daemon_reload: yes
+       enabled: yes
+
+   - name: starting docker service
+     systemd:
+       name: docker
+       state: started
+       daemon-reload: yes
+       enabled: yes
+
+   - name: adding kubernetes repo
+     template:
+       src: kubernetes.repo.j2
+       dest: /etc/yum.repos.d/kubernetes.repo
+
+   - name: installing kubernetes basics
+     yum:
+       name: "{{ item }}"
+       state: present
+     with_items:
+       - kubelet
+       - kubeadm
+       - kubectl
+
+   - name: Change IP in /etc/sysconfig/kubelet
+     command: sed "s/\(KUBELET_EXTRA_ARGS=\).*/\1--node-ip=$(ifconfig enp0s8 | sed -n '2p' | awk '{print $2}')/" /etc/sysconfig/kubelet
+
+   - name: Reload sysctl
+     command: sysctl --system
+
+   - name: Kebelet start
+     systemd:
+       state: started
+       name: kubelet
+       enabled: yes
+       daemon-reload: yes

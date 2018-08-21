@@ -20,5 +20,3 @@ EOF
 systemctl daemon-reload
 systemctl restart docker
 
-join
-  kubeadm join 192.168.1.80:6443 --token jof9ps.x0ume6ukjyfvsjw5 --discovery-token-ca-cert-hash sha256:c085f2cbb127ac37e8b2fe22ba5a46ebf6b489d6f4e9ebc6c09a60aefc0da55e
