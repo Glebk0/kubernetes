@@ -47,12 +47,6 @@
        user: vagrant
        groups: docker
 
-   - name: reloading docker service
-     systemd:
-       name: docker
-       daemon_reload: yes
-       enabled: yes
-
    - name: starting docker service
      systemd:
        name: docker
